@@ -1,0 +1,5 @@
+trojan://eeb6823c-b926-4ea2-866a-5542edd26e59@cf.090227.xyz:443?security=tls&sni=tjsp.hhxaf.cc.cd&fp=chrome&type=ws&host=tjsp.hhxaf.cc.cd&path=/#Ютуб 1
+trojan://eeb6823c-b926-4ea2-866a-5542edd26e59@nexusmods.com:443?security=tls&sni=tjsp.hhxaf.cc.cd&fp=chrome&type=ws&host=tjsp.hhxaf.cc.cd&path=/#Ютуб 2
+vless://e82387dd-afe2-4f77-8655-df4693739bb4@64.188.71.108:26426?encryption=none&flow=xtls-rprx-vision&security=reality&sni=microsoft.com&fp=chrome&pbk=gWhNEtQThatVeeZxgbB71CKVK_2eKGmjE3to2ew2VRk&sid=b8f9dcce&packetEncoding=xudp#Ютуб 3
+trojan://f922fa0f-3311-4368-85ff-cf65e727c854@space.byu.id.yxls.eu.cc:443?security=tls&sni=space.byu.id.yxls.eu.cc&fp=chrome&type=ws&path=/br-orcl#Ютуб 4
+trojan://eeb6823c-b926-4ea2-866a-5542edd26e59@tjsp.hhxaf.cc.cd:443?security=tls&sni=tjsp.hhxaf.cc.cd&fp=chrome&type=ws&path=/#Ютуб 5
