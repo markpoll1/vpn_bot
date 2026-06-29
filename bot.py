@@ -1,168 +1,204 @@
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-import re
+import json
+import os
+from datetime import datetime
 
-# 🔥 ТВОИ VLESS-ССЫЛКИ (с названиями стран)
-SERVERS = [
-    {
-        "name": "🇷🇺 Россия #1",
-        "link": "vless://ff19693c-11f3-4df9-8713-79a85a5ca090@159.195.150.101:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=sellflow.org&fp=firefox&pbk=SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc&sid&packetEncoding=xudp#%F0%9F%87%B7%F0%9F%87%BA%20%D0%A0%D0%BE%D1%81%D1%81%D0%B8%D1%8F%20%7C%20@VSPBOOST%20%2319"
-    },
-    {
-        "name": "🇫🇷 Франция",
-        "link": "vless://1f4c983e-382c-d2fa-b2dc-7981f02b34de@89.208.113.157:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=parisjetaime.com&fp=firefox&pbk=2dgS9vJTywAfGZmlkuzDIIXLUR-E1A-0na8_W--ruUc&sid=5be8210215&packetEncoding=xudp#%F0%9F%87%AB%F0%9F%87%B7%20%D0%A4%D1%80%D0%B0%D0%BD%D1%86%D0%B8%D1%8F%20%7C%20@VSPBOOST%20%2340"
-    },
-    {
-        "name": "🇷🇺 Россия #2",
-        "link": "vless://ff19693c-11f3-4df9-8713-79a85a5ca090@159.195.150.143:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=sellflow.org&fp=firefox&pbk=SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc&sid&packetEncoding=xudp#%F0%9F%87%B7%F0%9F%87%BA%20%D0%A0%D0%BE%D1%81%D1%81%D0%B8%D1%8F%20%7C%20@VSPBOOST%20%2304"
-    },
-]
+VERSION = "0.0.4"
+ADMINS = [6357610038]
 
-# 🧹 Функция для очистки ссылки от мусора после #
-def clean_link(link):
-    return link.split('#')[0]
+# ===== ССЫЛКА НА ПОДПИСКУ =====
+GITHUB_USERNAME = "markpoll1"
+VPN_SUB_URL = f"https://raw.githubusercontent.com/{GITHUB_USERNAME}/vpn_bot/main/subscriptions/vpn.txt"
 
-# 🏠 Команда /start - приветствие с меню
+# ===== СТАТИСТИКА =====
+STATS_FILE = "stats.json"
+
+def load_stats():
+    if os.path.exists(STATS_FILE):
+        with open(STATS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"users": [], "total_vpn_uses": 0, "daily_uses": {}}
+
+def save_stats(stats):
+    with open(STATS_FILE, "w", encoding="utf-8") as f:
+        json.dump(stats, f, indent=2, ensure_ascii=False)
+
+def get_today():
+    return datetime.now().strftime("%Y-%m-%d")
+
+# ===== КОМАНДЫ =====
 async def start(update, context):
-    # Создаём кнопки главного меню
+    user_id = str(update.effective_user.id)
+    username = update.effective_user.username or "без имени"
+    
+    stats = load_stats()
+    if user_id not in stats["users"]:
+        stats["users"].append(user_id)
+        save_stats(stats)
+    
+    date_str = datetime.now().strftime("%d.%m.%Y")
+    
     keyboard = [
-        [InlineKeyboardButton("📡 Получить сервера", callback_data="get_servers")],
+        [InlineKeyboardButton("📥 Подписка VPN", callback_data="sub_vpn")],
         [InlineKeyboardButton("❓ Как подключиться", callback_data="how_to")],
-        [InlineKeyboardButton("🔄 Обновить список", callback_data="refresh")],
+        [InlineKeyboardButton("📩 Связь со мной", callback_data="contact")],
     ]
+    if update.effective_user.id in ADMINS:
+        keyboard.append([InlineKeyboardButton("📊 Статистика", callback_data="stats")])
+    
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(
-        "🌐 *VPN Сервера для Ютуба*\n\n"
-        "Привет! Я помогаю находить рабочие VPN-сервера.\n\n"
-        "🆕 Сервера обновляются каждый день!\n"
-        "⚡ Нажми кнопку ниже, чтобы получить список.",
+        f"🌟 *ДОБРО ПОЖАЛОВАТЬ В VPN БОТ!*\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"🌐 *VPN Сервера*\n"
+        f"📅 Обновлено: {date_str}\n"
+        f"📦 Версия: `{VERSION}`\n\n"
+        f"👋 Привет, *@{username}*!\n\n"
+        f"📥 *Используй подписку VPN:*\n"
+        f"   • 📥 Подписка VPN\n\n"
+        f"🔄 *Сервера обновляются периодически.*\n"
+        f"📊 *Доступно 15 серверов.*\n\n"
+        f"⚠️ *Если сервер не работает:*\n"
+        f"Нажми на кнопку *«Связь со мной»*\n"
+        f"и напиши мне — я помогу!\n\n"
+        f"⚡ *Нажми кнопку ниже, чтобы начать!*",
         parse_mode="Markdown",
         reply_markup=reply_markup
     )
 
-# 📡 Команда /vpn - показать сервера
 async def vpn(update, context):
-    # Создаём кнопки для каждого сервера
-    keyboard = []
-    for i, server in enumerate(SERVERS, 1):
-        # Кнопка с названием сервера
-        button = InlineKeyboardButton(
-            f"📌 {server['name']}", 
-            callback_data=f"copy_{i}"
-        )
-        keyboard.append([button])  # Каждая кнопка на новой строке
+    await start(update, context)
+
+async def send_subscription(update, context):
+    query = update.callback_query
+    await query.answer()
     
-    # Добавляем кнопку "Назад"
-    keyboard.append([InlineKeyboardButton("🔙 Назад в меню", callback_data="back_to_menu")])
-    
+    keyboard = [[InlineKeyboardButton("🔙 В главное меню", callback_data="back_to_menu")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    # Проверяем, откуда пришёл запрос (из команды или из кнопки)
-    if update.callback_query:
-        # Если из кнопки - редактируем сообщение
-        query = update.callback_query
-        await query.answer()
-        await query.edit_message_text(
-            "📡 *Выбери сервер:*\n\n"
-            "Нажми на кнопку — ссылка скопируется автоматически.",
-            parse_mode="Markdown",
-            reply_markup=reply_markup
-        )
-    else:
-        # Если из команды /vpn - отправляем новое сообщение
-        await update.message.reply_text(
-            "📡 *Выбери сервер:*\n\n"
-            "Нажми на кнопку — ссылка скопируется автоматически.",
-            parse_mode="Markdown",
-            reply_markup=reply_markup
-        )
+    await query.edit_message_text(
+        f"📥 *ПОДПИСКА VPN*\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"Скопируй ссылку и добавь в раздел *«Подписки»*\n"
+        f"в своём VPN-клиенте (Hiddify, NekoBox, V2RayN):\n\n"
+        f"`{VPN_SUB_URL}`\n\n"
+        f"📋 *Как добавить:*\n"
+        f"1️⃣ Открой клиент → раздел «Подписки»\n"
+        f"2️⃣ Нажми «Добавить» → вставь ссылку\n"
+        f"3️⃣ Нажми «Обновить» — все 15 серверов подгрузятся!\n\n"
+        f"🔄 *Совет:*\n"
+        f"Обновляйте подписку раз в 24 часа,\n"
+        f"чтобы всегда иметь актуальные сервера.\n\n"
+        f"📌 *При обновлении списка на GitHub,*\n"
+        f"клиент сам подхватит новые сервера!",
+        parse_mode="Markdown",
+        reply_markup=reply_markup
+    )
 
-# 📋 Обработчик нажатий на кнопки
+# ===== ОБРАБОТЧИК КНОПОК =====
 async def button_handler(update, context):
     query = update.callback_query
-    await query.answer()  # Убираем "часики" на кнопке
-    
+    await query.answer()
     data = query.data
+    user_id = update.effective_user.id
     
-    # 🔙 Назад в меню
     if data == "back_to_menu":
         keyboard = [
-            [InlineKeyboardButton("📡 Получить сервера", callback_data="get_servers")],
+            [InlineKeyboardButton("📥 Подписка VPN", callback_data="sub_vpn")],
             [InlineKeyboardButton("❓ Как подключиться", callback_data="how_to")],
+            [InlineKeyboardButton("📩 Связь со мной", callback_data="contact")],
         ]
+        if user_id in ADMINS:
+            keyboard.append([InlineKeyboardButton("📊 Статистика", callback_data="stats")])
         reply_markup = InlineKeyboardMarkup(keyboard)
         await query.edit_message_text(
-            "🌐 *VPN Сервера для Ютуба*\n\n"
-            "Выбери действие:",
+            "🌐 *ГЛАВНОЕ МЕНЮ*\n━━━━━━━━━━━━━━━━━━━━━\n\n*Выбери действие:*",
             parse_mode="Markdown",
             reply_markup=reply_markup
         )
         return
     
-    # ❓ Как подключиться
+    if data == "sub_vpn":
+        await send_subscription(update, context)
+        return
+    
     if data == "how_to":
         keyboard = [[InlineKeyboardButton("🔙 Назад", callback_data="back_to_menu")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await query.edit_message_text(
-            "📖 *Как подключиться:*\n\n"
-            "1️⃣ Нажми на кнопку с названием сервера\n"
-            "2️⃣ Ссылка скопируется автоматически\n"
-            "3️⃣ Открой свой VPN-клиент (Happ, V2Ray, NekoBox)\n"
-            "4️⃣ Вставь ссылку → Подключись\n"
-            "5️⃣ Готово! 🚀\n\n"
-            "❓ Если не работает — попробуй другой сервер.",
+            "📖 *КАК ПОДКЛЮЧИТЬСЯ*\n━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "📥 *Способ 1 — Подписка (рекомендуемый):*\n"
+            "1️⃣ Нажми на кнопку «Подписка VPN»\n"
+            "2️⃣ Скопируй ссылку\n"
+            "3️⃣ Открой VPN-клиент → раздел «Подписки»\n"
+            "4️⃣ Вставь ссылку → нажми «Обновить»\n"
+            "5️⃣ Все 15 серверов подгрузятся автоматически!\n"
+            "6️⃣ Обновляйте подписку раз в 24 часа\n\n"
+            "📱 *Лучшие клиенты для VPN:*\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            "🔹 *Android / iOS:*\n"
+            "   • Happ\n   • Streisland\n   • Hiddify\n"
+            "   • INCY\n   • V2BOX\n   • V2RayTun\n\n"
+            "🔹 *Windows:*\n"
+            "   • V2RayN\n   • Throne",
             parse_mode="Markdown",
             reply_markup=reply_markup
         )
         return
     
-    # 🔄 Обновить список (для начала просто показываем сервера)
-    if data == "refresh" or data == "get_servers":
-        # Переходим к списку серверов
-        await vpn(update, context)
+    if data == "contact":
+        keyboard = [[InlineKeyboardButton("🔙 Назад", callback_data="back_to_menu")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "📩 *СВЯЗЬ СО МНОЙ*\n━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "💬 *Что ты можешь написать:*\n"
+            "   • Сообщить о неработающем сервере\n"
+            "   • Предложения по улучшению\n"
+            "   • Идеи для новых функций\n"
+            "   • Вопросы и отзывы\n\n"
+            "✍️ *Напиши мне:*\n"
+            "   @dsfk13\n\n"
+            "💪 Спасибо, что пользуешься ботом!",
+            parse_mode="Markdown",
+            reply_markup=reply_markup
+        )
         return
     
-    # 📌 Копирование ссылки (data = copy_1, copy_2, copy_3)
-    if data.startswith("copy_"):
-        # Получаем номер сервера
-        server_num = int(data.split("_")[1]) - 1
-        
-        if 0 <= server_num < len(SERVERS):
-            server = SERVERS[server_num]
-            clean = clean_link(server['link'])
-            
-            # Кнопка "Назад"
-            keyboard = [[InlineKeyboardButton("🔙 Назад к списку", callback_data="get_servers")]]
+    if data == "stats":
+        if user_id not in ADMINS:
+            keyboard = [[InlineKeyboardButton("🔙 Назад", callback_data="back_to_menu")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            # Отправляем ссылку в отдельном сообщении (чтобы её легко было скопировать)
             await query.edit_message_text(
-                f"✅ *Ссылка скопирована!*\n\n"
-                f"📌 *{server['name']}*\n\n"
-                f"`{clean}`\n\n"
-                f"📋 Нажми на ссылку выше, чтобы выделить и скопировать,\n"
-                f"или просто выдели её пальцем/мышкой.\n\n"
-                f"➡️ Вставь в VPN-клиент и подключайся!",
+                "🔒 *ДОСТУП ЗАПРЕЩЁН*\n━━━━━━━━━━━━━━━━━━━━━\n\nСтатистика доступна только администратору.",
                 parse_mode="Markdown",
                 reply_markup=reply_markup
             )
+            return
+        
+        stats = load_stats()
+        await query.edit_message_text(
+            f"📊 *СТАТИСТИКА БОТА*\n━━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"👤 Всего пользователей: `{len(stats['users'])}`\n"
+            f"📡 Всего запросов: `{stats['total_vpn_uses']}`\n"
+            f"📊 Сегодня: `{stats['daily_uses'].get(get_today(), 0)}`",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Назад", callback_data="back_to_menu")]])
+        )
         return
 
-# 🔑 ТВОЙ ТОКЕН
+# ===== ЗАПУСК =====
 TOKEN = "8992106008:AAGoXJbIsOeCSJu-gN7HWaDjcSnUG80G3O0"
 
-# Запускаем бота
 app = Application.builder().token(TOKEN).build()
 
-# Регистрируем команды
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("vpn", vpn))
-
-# Регистрируем обработчик кнопок
 app.add_handler(CallbackQueryHandler(button_handler))
 
-print("✅ Бот запущен! Пиши /start в Telegram")
-print("🔥 Теперь у бота красивые кнопки!")
+print("✅ Бот запущен!")
+print(f"📦 Версия: {VERSION}")
+print(f"\n📥 Подписка VPN: {VPN_SUB_URL}")
 
 app.run_polling()
