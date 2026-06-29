@@ -186,7 +186,6 @@ async def button_handler(update, context):
         )
         return
 
-# 👇 БЕЗОПАСНО: токен берётся из переменной окружения
 TOKEN = os.environ.get("TOKEN")
 
 if not TOKEN:
